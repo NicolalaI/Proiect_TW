@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Putem schimba URL-ul daca serverul ruleaza pe alt port
 const instance = axios.create({
-    baseURL: 'http://localhost:8080/api'
+    baseURL: 'http://localhost:9000/api'
 });
 
 // Interceptor pentru a atasa token-ul la fiecare cerere
