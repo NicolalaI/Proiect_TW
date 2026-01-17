@@ -1,30 +1,8 @@
-import mysql from 'mysql2/promise';
-import env from 'dotenv';
+import db from '../dbConfig.js';
 import User from './User.js';
 import Project from './Project.js';
 import Bug from './Bug.js';
 import ProjectMember from './ProjectMember.js';
-
-env.config();
-
-function Create_DB() {
-    let conn;
-
-    mysql.createConnection({
-        user: process.env.DB_USERNAME,
-        password: process.env.DB_PASSWORD
-    })
-    .then((connection) => {
-        conn = connection;
-        return connection.query(`CREATE DATABASE IF NOT EXISTS ${process.env.DB_DATABASE}`);
-    })
-    .then(() => {
-        return conn.end();
-    })
-    .catch((err) => {
-        console.warn(err.stack);
-    });
-}
 
 function FK_Config() {
     //Relatia User-Project(Many-to-Many prin ProjectMember)
@@ -44,9 +22,16 @@ function FK_Config() {
     Bug.belongsTo(User, { foreignKey: 'AssigneeId', as: 'Assignee' });
 }
 
-function DB_Init() {
-    Create_DB();
-    FK_Config();
+async function DB_Init() {
+    try {
+        FK_Config();
+        await db.authenticate();
+        console.log('Connection has been established successfully.');
+        await db.sync({ alter: true });
+        console.log('Database synchronized successfully.');
+    } catch (error) {
+        console.error('Unable to connect to the database:', error);
+    }
 }
 
 export default DB_Init;

@@ -5,12 +5,22 @@ import LikeOp from './Operators.js';
 
 // 1. Creare Proiect
 async function createProject(project) {
-    return await Project.create(project);
+    let newProject = await Project.create(project);
+
+    // Daca avem CreatorId (trimis din frontend), il facem automat MP
+    if (project.CreatorId) {
+        let user = await User.findByPk(project.CreatorId);
+        if (user) {
+            await newProject.addMember(user, { through: { Role: 'MP' } });
+        }
+    }
+
+    return newProject;
 }
 
 // 2. Gasire toate proiectele
 async function getProjects() {
-    return await Project.findAll({ include: ['Bugs'] }); 
+    return await Project.findAll({ include: ['Bugs'] });
 }
 
 // 3. MODIFICAT: Aducem si bug-urile
@@ -84,7 +94,7 @@ async function addTeamMember(projectId, userId, role) {
     }
 
     // through: { Role: role } este modul prin care setam valoarea in tabela de legatura
-    return await project.addMember(user, { through: { Role: role }});
+    return await project.addMember(user, { through: { Role: role } });
 }
 
 export {
