@@ -2,6 +2,7 @@ import Bug from '../entities/Bug.js';
 import User from '../entities/User.js';
 import Project from '../entities/Project.js';
 import LikeOp from './Operators.js';
+import Sequelize from 'sequelize';
 
 // 1. Creare Bug
 async function createBug(bug) {
@@ -52,10 +53,11 @@ async function deleteBug(id) {
 
 // 6. FILTRARE AVANSATA (Useri, Proiecte, Prioritate)
 async function getBugsWithFilterAndPagination(filter) {
-    // Valori default pentru paginare
+    // 1. Paginare (Default: Pagina 1, cate 10 pe pagina)
     if (!filter.take) filter.take = 10;
     if (!filter.skip) filter.skip = 1;
 
+    // 2. Filtrare (Where)
     let whereClause = {};
 
     // --- Filtre Text (Like) ---
@@ -69,21 +71,51 @@ async function getBugsWithFilterAndPagination(filter) {
         whereClause.Priority = { [LikeOp]: `%${filter.priority}%` };
 
     // --- Filtre Exacte (ID-uri) ---
-    // Aici rezolvam cerinta ta: "Bug-urile pe care le testeaza un user"
     if (filter.assigneeId)
         whereClause.AssigneeId = filter.assigneeId;
 
-    // "Bug-urile raportate de un user"
     if (filter.reporterId)
         whereClause.ReporterId = filter.reporterId;
 
-    // "Bug-urile dintr-un anumit proiect"
     if (filter.projectId)
         whereClause.ProjectId = filter.projectId;
 
+    // 3. SORTARE (Adaptat dupa modelul User)
+    // Default: Sortam dupa BugId crescator (sau poti pune 'createdAt' 'DESC')
+    let orderClause = [['BugId', 'DESC']]; 
+
+    // Daca primim parametri de sortare, ii folosim
+    // Ex: ?sortBy=Priority&sortOrder=DESC
+    if (filter.sortBy === 'Priority') {
+    // Aici facem magia. Construim o regula custom de sortare.
+    const customOrder = Sequelize.literal(`
+        CASE Priority
+            WHEN 'Critical' THEN 1
+            WHEN 'High' THEN 2
+            WHEN 'Medium' THEN 3
+            WHEN 'Low' THEN 4
+            ELSE 5
+        END
+    `);
+    
+    // Setam directia (ASC = Critical primul, DESC = Low primul)
+    orderClause = [[customOrder, filter.sortOrder || 'ASC']];
+} 
+else if (filter.sortBy && filter.sortOrder) {
+    // Pentru orice alt camp (Status, Subject, etc) ramane sortarea standard
+    orderClause = [[filter.sortBy, filter.sortOrder.toUpperCase()]];
+}
+
     return await Bug.findAndCountAll({
         distinct: true,
+        // Poti decomenta include-urile daca vrei sa primesti si detaliile (Proiect, Useri)
+        include: [
+           'Project', 
+           'Reporter', 
+           'Assignee'
+        ], 
         where: whereClause,
+        order: orderClause, // <--- Aici aplicam sortarea dinamica
         limit: parseInt(filter.take),
         offset: parseInt(filter.skip - 1) * parseInt(filter.take),
     });

@@ -15,7 +15,12 @@ async function getProjects() {
 
 // 3. MODIFICAT: Aducem si bug-urile
 async function getProjectById(id) {
-    return await Project.findByPk(id, { include: ['Bugs'] });
+    return await Project.findByPk(id, {
+        include: [
+            { model: Bug, as: 'Bugs' },       // Aducem Bug-urile
+            { model: User, as: 'Members' }    // <--- 2. Aducem Membrii (Echipa)
+        ]
+    });
 }
 
 // 4. Stergere Proiect
@@ -57,7 +62,7 @@ async function getProjectsWithFilterAndPagination(filter) {
 
     return await Project.findAndCountAll({
         distinct: true,
-        include: ['Bugs'], // Pastram include-ul de care vorbeam (sa vedem bug-urile)
+        include: ['Bugs', 'Members'], // Pastram include-ul de care vorbeam (sa vedem bug-urile)
         where: whereClause,
         order: orderClause, // <--- Aplicam sortarea
         limit: parseInt(filter.take),

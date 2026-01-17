@@ -5,6 +5,9 @@ import createDBRouter from './routes/createDBRouter.js';
 import userRouter from './routes/UserRouter.js';
 import projectRouter from './routes/ProjectRouter.js';
 import bugRouter from './routes/BugRouter.js';
+import authRouter from './routes/auth-router.js';
+import genericErrorHandler from './middleware/generic-error-middleware.js';
+
 
 const app = express();
 
@@ -31,5 +34,9 @@ app.use('/api', createDBRouter);
 app.use('/api', userRouter);
 app.use('/api', projectRouter);
 app.use('/api', bugRouter);
+app.use('/api/auth', authRouter);
+
+// Middleware pentru prinderea erorilor neprevazute
+app.use(genericErrorHandler);
 
 export default app;
